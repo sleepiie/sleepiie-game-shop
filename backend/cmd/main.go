@@ -33,17 +33,38 @@ func main() {
 		log.Fatal("Failed to connect to database:", err)
 	}
 
-	db.AutoMigrate(&domain.Game{}, &domain.GameKey{})
+	db.AutoMigrate(&domain.Game{}, &domain.GameKey{}, &domain.User{})
 
 	gameRepo := database.NewGameRepository(db)
 	gameService := application.NewGameService(gameRepo)
 	gameHandler := handler.NewGameHandler(gameService)
+
+	userRepo := database.NewUserRepository(db)
+	authService := application.NewAuthService(userRepo)
+	authHandler := handler.NewAuthHandler(authService)
 
 	r := gin.Default()
 
 	api := r.Group("/api")
 	{
 		api.GET("/games", gameHandler.GetGames)
+		api.POST("/register", authHandler.Register)
+		api.POST("/login", authHandler.Login)
+
+		protected := api.Group("/")
+		protected.Use(handler.AuthMiddleware())
+		{
+			// protect route
+		}
+
+		admin := api.Group("/admin")
+		admin.Use(handler.AuthMiddleware(), handler.AdminMiddleware())
+		{
+			// admin route test
+			admin.GET("/test", func(c *gin.Context) {
+				c.JSON(200, gin.H{"message": "Welcome, Admin!"})
+			})
+		}
 	}
 
 	port := os.Getenv("PORT")
