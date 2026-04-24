@@ -33,7 +33,7 @@ func main() {
 		log.Fatal("Failed to connect to database:", err)
 	}
 
-	db.AutoMigrate(&domain.Game{}, &domain.GameKey{}, &domain.User{})
+	db.AutoMigrate(&domain.Game{}, &domain.GameKey{}, &domain.User{}, &domain.CartItem{})
 
 	gameRepo := database.NewGameRepository(db)
 	gameService := application.NewGameService(gameRepo)
@@ -42,6 +42,10 @@ func main() {
 	userRepo := database.NewUserRepository(db)
 	authService := application.NewAuthService(userRepo)
 	authHandler := handler.NewAuthHandler(authService)
+
+	cartRepo := database.NewCartRepository(db)
+	cartService := application.NewCartService(cartRepo, gameRepo)
+	cartHandler := handler.NewCartHandler(cartService)
 
 	r := gin.Default()
 
@@ -54,7 +58,9 @@ func main() {
 		protected := api.Group("/")
 		protected.Use(handler.AuthMiddleware())
 		{
-			// protect route
+			protected.GET("/cart", cartHandler.GetCart)
+			protected.POST("/cart", cartHandler.AddToCart)
+			protected.DELETE("/cart/:id", cartHandler.RemoveFromCart)
 		}
 
 		admin := api.Group("/admin")
