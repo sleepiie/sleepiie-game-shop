@@ -14,7 +14,7 @@ type Game struct {
 type GameKey struct {
 	ID        uint      `json:"id" gorm:"primaryKey"`
 	GameID    uint      `json:"game_id"`
-	KeyValue  string    `json:"-"`
+	KeyValue  string    `json:"key_value,omitempty"`
 	IsUsed    bool      `json:"is_used"`
 	OrderID   *uint     `json:"order_id"`
 	CreatedAt time.Time `json:"created_at"`

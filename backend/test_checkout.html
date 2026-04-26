@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test PromptPay Checkout</title>
+    <!-- โหลด Stripe.js -->
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background: #f7f9fc;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #635bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #0a2540;
+        }
+
+        #error-message {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>1. เอา client_secret จาก Postman มาวาง</h2>
+        <input type="text" id="clientSecret" placeholder="pi_..._secret_...">
+
+        <h2>2. อีเมลจำลอง (บังคับสำหรับ PromptPay)</h2>
+        <input type="email" id="email" value="test@example.com">
+
+        <button id="submit">แสดง QR Code (จำลอง)</button>
+
+        <div id="error-message"></div>
+    </div>
+
+    <script>
+        const stripe = Stripe('pk_test_51TPfr4ERK9dLOA6hMczDqLET9PaTRGpWVQf1qADURkho2VGf9j3qXKdewNgjA3sHPjDeEqCLTRx29CL8YYUNBUgL00frwNLuK6');
+
+        document.getElementById('submit').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const clientSecret = document.getElementById('clientSecret').value;
+            const email = document.getElementById('email').value;
+
+            if (!clientSecret) {
+                alert("กรุณาใส่ client secret"); return;
+            }
+
+            const { error } = await stripe.confirmPromptPayPayment(clientSecret, {
+                payment_method: {
+                    billing_details: { email: email }
+                }
+            });
+
+            if (error) {
+                document.getElementById('error-message').textContent = error.message;
+            }
+        });
+    </script>
+
+</body>
+
+</html>

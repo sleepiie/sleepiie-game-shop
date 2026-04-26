@@ -33,7 +33,7 @@ func main() {
 		log.Fatal("Failed to connect to database:", err)
 	}
 
-	db.AutoMigrate(&domain.Game{}, &domain.GameKey{}, &domain.User{}, &domain.CartItem{})
+	db.AutoMigrate(&domain.Order{}, &domain.OrderItem{}, &domain.Game{}, &domain.GameKey{}, &domain.User{}, &domain.CartItem{})
 
 	gameRepo := database.NewGameRepository(db)
 	gameService := application.NewGameService(gameRepo)
@@ -47,6 +47,10 @@ func main() {
 	cartService := application.NewCartService(cartRepo, gameRepo)
 	cartHandler := handler.NewCartHandler(cartService)
 
+	orderRepo := database.NewOrderRepository(db)
+	orderService := application.NewOrderService(orderRepo)
+	orderHandler := handler.NewOrderHandler(orderService)
+
 	r := gin.Default()
 
 	api := r.Group("/api")
@@ -54,6 +58,7 @@ func main() {
 		api.GET("/games", gameHandler.GetGames)
 		api.POST("/register", authHandler.Register)
 		api.POST("/login", authHandler.Login)
+		api.POST("/webhook", orderHandler.StripeWebhook)
 
 		protected := api.Group("/")
 		protected.Use(handler.AuthMiddleware())
@@ -61,6 +66,8 @@ func main() {
 			protected.GET("/cart", cartHandler.GetCart)
 			protected.POST("/cart", cartHandler.AddToCart)
 			protected.DELETE("/cart/:id", cartHandler.RemoveFromCart)
+			protected.POST("/checkout", orderHandler.Checkout)
+			protected.GET("/orders", orderHandler.GetHistory)
 		}
 
 		admin := api.Group("/admin")
