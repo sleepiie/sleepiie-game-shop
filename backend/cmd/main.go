@@ -48,7 +48,7 @@ func main() {
 	cartHandler := handler.NewCartHandler(cartService)
 
 	orderRepo := database.NewOrderRepository(db)
-	orderService := application.NewOrderService(orderRepo)
+	orderService := application.NewOrderService(orderRepo, cartService)
 	orderHandler := handler.NewOrderHandler(orderService)
 
 	r := gin.Default()

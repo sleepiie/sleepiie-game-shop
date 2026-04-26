@@ -10,12 +10,16 @@ import (
 )
 
 type orderService struct {
-	repo domain.OrderRepository
+	repo        domain.OrderRepository
+	cartService domain.CartService
 }
 
-func NewOrderService(repo domain.OrderRepository) domain.OrderService {
+func NewOrderService(repo domain.OrderRepository, cartService domain.CartService) domain.OrderService {
 	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
-	return &orderService{repo: repo}
+	return &orderService{
+		repo:        repo,
+		cartService: cartService,
+	}
 }
 
 func (s *orderService) Checkout(userID uint, req domain.CheckoutRequest) (string, error) {
@@ -46,7 +50,6 @@ func (s *orderService) Checkout(userID uint, req domain.CheckoutRequest) (string
 		return "", err
 	}
 
-	// ส่ง ClientSecret กลับไปให้ Frontend ดึงไปแสดง QR Code
 	return pi.ClientSecret, nil
 }
 
@@ -80,6 +83,16 @@ func (s *orderService) GetHistory(userID uint) ([]domain.OrderHistoryResponse, e
 }
 
 func (s *orderService) ProcessPaymentSuccess(paymentIntentID string) error {
-	return s.repo.ProcessPaymentSuccess(paymentIntentID)
-}
+	order, err := s.repo.ProcessPaymentSuccess(paymentIntentID)
+	if err != nil {
+		return err
+	}
 
+	if order != nil {
+		for _, item := range order.Items {
+			_ = s.cartService.RemoveItem(order.UserID, item.GameID)
+		}
+	}
+
+	return nil
+}

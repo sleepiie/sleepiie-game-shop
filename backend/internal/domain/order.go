@@ -42,7 +42,7 @@ type OrderRepository interface {
 	CheckStockAndCalculateTotal(gameIDs []uint) (float64, []OrderItem, error)
 	CreateOrder(order *Order) error
 	GetHistory(userID uint) ([]Order, error)
-	ProcessPaymentSuccess(paymentIntentID string) error
+	ProcessPaymentSuccess(paymentIntentID string) (*Order, error)
 }
 
 type OrderService interface {

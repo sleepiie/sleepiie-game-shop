@@ -55,9 +55,9 @@ func (r *orderRepository) GetHistory(userID uint) ([]domain.Order, error) {
 	return orders, err
 }
 
-func (r *orderRepository) ProcessPaymentSuccess(paymentIntentID string) error {
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		var order domain.Order
+func (r *orderRepository) ProcessPaymentSuccess(paymentIntentID string) (*domain.Order, error) {
+	var order domain.Order
+	err := r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("payment_intent = ?", paymentIntentID).Preload("Items").First(&order).Error; err != nil {
 			return err
 		}
@@ -83,4 +83,5 @@ func (r *orderRepository) ProcessPaymentSuccess(paymentIntentID string) error {
 		}
 		return nil
 	})
+	return &order, err
 }
