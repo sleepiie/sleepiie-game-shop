@@ -68,9 +68,13 @@ func (s *gameService) DeleteGame(id uint) error {
 func (s *gameService) AddGameKeys(gameID uint, keys []string) error {
 	var gameKeys []domain.GameKey
 	for _, key := range keys {
+		encryptedKey, err := EncryptKey(key)
+		if err != nil {
+			return err
+		}
 		gameKeys = append(gameKeys, domain.GameKey{
 			GameID:   gameID,
-			KeyValue: key,
+			KeyValue: encryptedKey,
 			IsUsed:   false,
 		})
 	}

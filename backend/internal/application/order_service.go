@@ -63,9 +63,10 @@ func (s *orderService) GetHistory(userID uint) ([]domain.OrderHistoryResponse, e
 	for _, order := range orders {
 		var keys []domain.OrderKeyResponse
 		for _, key := range order.Keys {
+			decryptedKey, _ := DecryptKey(key.KeyValue)
 			keys = append(keys, domain.OrderKeyResponse{
 				GameID:   key.GameID,
-				KeyValue: key.KeyValue,
+				KeyValue: decryptedKey,
 			})
 		}
 
@@ -107,9 +108,10 @@ func (s *orderService) GetAllOrders() ([]domain.OrderHistoryResponse, error) {
 	for _, order := range orders {
 		var keys []domain.OrderKeyResponse
 		for _, key := range order.Keys {
+			decryptedKey, _ := DecryptKey(key.KeyValue)
 			keys = append(keys, domain.OrderKeyResponse{
 				GameID:   key.GameID,
-				KeyValue: key.KeyValue,
+				KeyValue: decryptedKey,
 			})
 		}
 
