@@ -8,6 +8,7 @@ type Game struct {
 	Description string    `json:"description"`
 	Price       float64   `json:"price"`
 	Platform    string    `json:"platform"`
+	ImageURL    string    `json:"image_url"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
@@ -30,6 +31,7 @@ type CreateGameRequest struct {
 	Description string  `json:"description"`
 	Price       float64 `json:"price" binding:"required"`
 	Platform    string  `json:"platform" binding:"required"`
+	ImageURL    string  `json:"image_url"`
 }
 
 type AddGameKeysRequest struct {

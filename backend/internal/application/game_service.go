@@ -52,6 +52,7 @@ func (s *gameService) CreateGame(req domain.CreateGameRequest) (*domain.Game, er
 		Description: req.Description,
 		Price:       req.Price,
 		Platform:    req.Platform,
+		ImageURL:    req.ImageURL,
 	}
 
 	if err := s.repo.Create(game); err != nil {
