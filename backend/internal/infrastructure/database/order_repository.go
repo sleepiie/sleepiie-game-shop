@@ -85,3 +85,38 @@ func (r *orderRepository) ProcessPaymentSuccess(paymentIntentID string) (*domain
 	})
 	return &order, err
 }
+
+func (r *orderRepository) GetAllOrders() ([]domain.Order, error) {
+	var orders []domain.Order
+	err := r.db.Preload("Items").Preload("Keys").Find(&orders).Error
+	return orders, err
+}
+
+func (r *orderRepository) GetRevenueSummary() (float64, int64, []domain.DailyRevenue, error) {
+	var totalRevenue float64
+	var totalOrders int64
+	var dailyRevenue []domain.DailyRevenue
+
+	err := r.db.Model(&domain.Order{}).Where("status = ?", "paid").Select("COALESCE(SUM(total_amount), 0)").Scan(&totalRevenue).Error
+	if err != nil {
+		return 0, 0, nil, err
+	}
+
+	err = r.db.Model(&domain.Order{}).Where("status = ?", "paid").Count(&totalOrders).Error
+	if err != nil {
+		return 0, 0, nil, err
+	}
+
+	err = r.db.Model(&domain.Order{}).
+		Select("DATE(created_at)::text as date, SUM(total_amount) as revenue").
+		Where("status = ?", "paid").
+		Group("DATE(created_at)").
+		Order("DATE(created_at) ASC").
+		Scan(&dailyRevenue).Error
+
+	if err != nil {
+		return 0, 0, nil, err
+	}
+
+	return totalRevenue, totalOrders, dailyRevenue, nil
+}

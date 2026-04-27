@@ -96,3 +96,45 @@ func (s *orderService) ProcessPaymentSuccess(paymentIntentID string) error {
 
 	return nil
 }
+
+func (s *orderService) GetAllOrders() ([]domain.OrderHistoryResponse, error) {
+	orders, err := s.repo.GetAllOrders()
+	if err != nil {
+		return nil, err
+	}
+
+	var response []domain.OrderHistoryResponse
+	for _, order := range orders {
+		var keys []domain.OrderKeyResponse
+		for _, key := range order.Keys {
+			keys = append(keys, domain.OrderKeyResponse{
+				GameID:   key.GameID,
+				KeyValue: key.KeyValue,
+			})
+		}
+
+		response = append(response, domain.OrderHistoryResponse{
+			ID:          order.ID,
+			TotalAmount: order.TotalAmount,
+			Status:      order.Status,
+			CreatedAt:   order.CreatedAt,
+			Items:       order.Items,
+			Keys:        keys,
+		})
+	}
+
+	return response, nil
+}
+
+func (s *orderService) GetRevenueSummary() (*domain.RevenueSummaryResponse, error) {
+	totalRevenue, totalOrders, dailyRevenue, err := s.repo.GetRevenueSummary()
+	if err != nil {
+		return nil, err
+	}
+
+	return &domain.RevenueSummaryResponse{
+		TotalRevenue: totalRevenue,
+		TotalOrders:  totalOrders,
+		DailyRevenue: dailyRevenue,
+	}, nil
+}

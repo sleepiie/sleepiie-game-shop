@@ -45,3 +45,35 @@ func (s *gameService) GetGameByID(id uint) (*domain.GameResponse, error) {
 		InStock: stock,
 	}, nil
 }
+
+func (s *gameService) CreateGame(req domain.CreateGameRequest) (*domain.Game, error) {
+	game := &domain.Game{
+		Title:       req.Title,
+		Description: req.Description,
+		Price:       req.Price,
+		Platform:    req.Platform,
+	}
+
+	if err := s.repo.Create(game); err != nil {
+		return nil, err
+	}
+
+	return game, nil
+}
+
+func (s *gameService) DeleteGame(id uint) error {
+	return s.repo.Delete(id)
+}
+
+func (s *gameService) AddGameKeys(gameID uint, keys []string) error {
+	var gameKeys []domain.GameKey
+	for _, key := range keys {
+		gameKeys = append(gameKeys, domain.GameKey{
+			GameID:   gameID,
+			KeyValue: key,
+			IsUsed:   false,
+		})
+	}
+
+	return s.repo.CreateKeys(gameKeys)
+}

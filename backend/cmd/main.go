@@ -73,10 +73,13 @@ func main() {
 		admin := api.Group("/admin")
 		admin.Use(handler.AuthMiddleware(), handler.AdminMiddleware())
 		{
-			// admin route test
-			admin.GET("/test", func(c *gin.Context) {
-				c.JSON(200, gin.H{"message": "Welcome, Admin!"})
-			})
+
+			admin.POST("/games", gameHandler.CreateGame)
+			admin.DELETE("/games/:id", gameHandler.DeleteGame)
+			admin.POST("/games/:id/keys", gameHandler.AddGameKeys)
+
+			admin.GET("/orders", orderHandler.GetAllOrders)
+			admin.GET("/revenue", orderHandler.GetRevenueSummary)
 		}
 	}
 

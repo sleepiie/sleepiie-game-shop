@@ -85,3 +85,23 @@ func (h *OrderHandler) StripeWebhook(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+func (h *OrderHandler) GetAllOrders(c *gin.Context) {
+	orders, err := h.service.GetAllOrders()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch all orders"})
+		return
+	}
+
+	c.JSON(http.StatusOK, orders)
+}
+
+func (h *OrderHandler) GetRevenueSummary(c *gin.Context) {
+	summary, err := h.service.GetRevenueSummary()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch revenue summary"})
+		return
+	}
+
+	c.JSON(http.StatusOK, summary)
+}
+

@@ -46,3 +46,57 @@ func (h *GameHandler) GetGameByID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, game)
 }
+
+func (h *GameHandler) CreateGame(c *gin.Context) {
+	var req domain.CreateGameRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	game, err := h.service.CreateGame(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create game"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, game)
+}
+
+func (h *GameHandler) DeleteGame(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid game ID format"})
+		return
+	}
+
+	if err := h.service.DeleteGame(uint(id)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete game"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Game deleted successfully"})
+}
+
+func (h *GameHandler) AddGameKeys(c *gin.Context) {
+	idParam := c.Param("id")
+	gameID, err := strconv.Atoi(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid game ID format"})
+		return
+	}
+
+	var req domain.AddGameKeysRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.service.AddGameKeys(uint(gameID), req.Keys); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add game keys"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Keys added successfully"})
+}

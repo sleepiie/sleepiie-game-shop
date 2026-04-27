@@ -41,3 +41,15 @@ func (r *gameRepository) CountAvailableKeys(gameID uint) (int64, error) {
 		Count(&count).Error
 	return count, err
 }
+
+func (r *gameRepository) Create(game *domain.Game) error {
+	return r.db.Create(game).Error
+}
+
+func (r *gameRepository) Delete(id uint) error {
+	return r.db.Delete(&domain.Game{}, id).Error
+}
+
+func (r *gameRepository) CreateKeys(keys []domain.GameKey) error {
+	return r.db.Create(&keys).Error
+}

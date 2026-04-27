@@ -38,15 +38,30 @@ type OrderHistoryResponse struct {
 	Keys        []OrderKeyResponse `json:"keys"`
 }
 
+type DailyRevenue struct {
+	Date    string  `json:"date"`
+	Revenue float64 `json:"revenue"`
+}
+
+type RevenueSummaryResponse struct {
+	TotalRevenue float64        `json:"total_revenue"`
+	TotalOrders  int64          `json:"total_orders"`
+	DailyRevenue []DailyRevenue `json:"daily_revenue"`
+}
+
 type OrderRepository interface {
 	CheckStockAndCalculateTotal(gameIDs []uint) (float64, []OrderItem, error)
 	CreateOrder(order *Order) error
 	GetHistory(userID uint) ([]Order, error)
 	ProcessPaymentSuccess(paymentIntentID string) (*Order, error)
+	GetAllOrders() ([]Order, error)
+	GetRevenueSummary() (float64, int64, []DailyRevenue, error)
 }
 
 type OrderService interface {
 	Checkout(userID uint, req CheckoutRequest) (string, error) // Returns payment intent ID / client secret
 	GetHistory(userID uint) ([]OrderHistoryResponse, error)
 	ProcessPaymentSuccess(paymentIntentID string) error
+	GetAllOrders() ([]OrderHistoryResponse, error)
+	GetRevenueSummary() (*RevenueSummaryResponse, error)
 }

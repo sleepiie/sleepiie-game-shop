@@ -25,13 +25,30 @@ type GameResponse struct {
 	InStock int64 `json:"in_stock"`
 }
 
+type CreateGameRequest struct {
+	Title       string  `json:"title" binding:"required"`
+	Description string  `json:"description"`
+	Price       float64 `json:"price" binding:"required"`
+	Platform    string  `json:"platform" binding:"required"`
+}
+
+type AddGameKeysRequest struct {
+	Keys []string `json:"keys" binding:"required,min=1"`
+}
+
 type GameRepository interface {
 	FindAll(search string, platform string) ([]Game, error)
 	FindByID(id uint) (*Game, error)
 	CountAvailableKeys(gameID uint) (int64, error)
+	Create(game *Game) error
+	Delete(id uint) error
+	CreateKeys(keys []GameKey) error
 }
 
 type GameService interface {
 	GetGamesList(search string, platform string) ([]GameResponse, error)
 	GetGameByID(id uint) (*GameResponse, error)
+	CreateGame(req CreateGameRequest) (*Game, error)
+	DeleteGame(id uint) error
+	AddGameKeys(gameID uint, keys []string) error
 }
