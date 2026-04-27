@@ -10,6 +10,7 @@ import (
 	"github.com/sleepiie/sleepiie-game-shop/internal/infrastructure/database"
 	handler "github.com/sleepiie/sleepiie-game-shop/internal/infrastructure/http"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
@@ -52,6 +53,13 @@ func main() {
 	orderHandler := handler.NewOrderHandler(orderService)
 
 	r := gin.Default()
+
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}))
 
 	api := r.Group("/api")
 	{
