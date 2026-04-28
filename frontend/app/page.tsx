@@ -9,25 +9,20 @@ import {
   Space,
   Badge,
   Button,
-  Avatar,
-  Dropdown,
   Empty,
   Spin,
   Row,
   Col,
+  App,
 } from "antd";
 import {
   SearchOutlined,
   ShoppingCartOutlined,
-  UserOutlined,
-  LogoutOutlined,
-  LoginOutlined,
   ThunderboltOutlined,
 } from "@ant-design/icons";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { Game } from "@/types";
+import Navbar from "@/components/Navbar";
 
 const { Title, Text, Paragraph } = Typography;
 const { Search } = Input;
@@ -40,7 +35,15 @@ const platformColors: Record<string, string> = {
   "Epic Games": "purple",
 };
 
-function GameCard({ game }: { game: Game }) {
+function GameCard({
+  game,
+  onAddToCart,
+  adding,
+}: {
+  game: Game;
+  onAddToCart: (gameId: number) => void;
+  adding: boolean;
+}) {
   const outOfStock = game.in_stock === 0;
 
   return (
@@ -131,8 +134,10 @@ function GameCard({ game }: { game: Game }) {
               type="primary"
               size="small"
               disabled={outOfStock}
+              loading={adding}
               icon={<ShoppingCartOutlined />}
               style={{ borderRadius: 8 }}
+              onClick={() => onAddToCart(game.id)}
             >
               Add to Cart
             </Button>
@@ -144,15 +149,12 @@ function GameCard({ game }: { game: Game }) {
 }
 
 export default function LandingPage() {
-  const router = useRouter();
+  const { message } = App.useApp();
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchValue, setSearchValue] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    setIsLoggedIn(!!localStorage.getItem("token"));
-  }, []);
+  const [addingId, setAddingId] = useState<number | null>(null);
+  const [cartCount, setCartCount] = useState(0);
 
   const fetchGames = useCallback(async (search: string) => {
     setLoading(true);
@@ -177,79 +179,29 @@ export default function LandingPage() {
     fetchGames(value);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setIsLoggedIn(false);
-  };
+  const handleAddToCart = async (gameId: number) => {
+    if (!localStorage.getItem("token")) {
+      message.warning("Please login to add items to your cart");
+      return;
+    }
 
-  const userMenuItems = [
-    {
-      key: "logout",
-      label: "Logout",
-      icon: <LogoutOutlined />,
-      danger: true,
-      onClick: handleLogout,
-    },
-  ];
+    setAddingId(gameId);
+    try {
+      await api.post("/cart", { game_id: gameId });
+      message.success("Added to cart! 🛒");
+      setCartCount((prev) => prev + 1);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      const errorMsg = error?.response?.data?.error ?? "Failed to add to cart";
+      message.error(errorMsg);
+    } finally {
+      setAddingId(null);
+    }
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "#0f0f1a" }}>
-      {/* Navbar */}
-      <header
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 100,
-          background: "rgba(15,15,26,0.85)",
-          backdropFilter: "blur(16px)",
-          borderBottom: "1px solid rgba(124,58,237,0.15)",
-          padding: "0 32px",
-          height: 64,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <Link href="/" style={{ textDecoration: "none" }}>
-          <Space align="center" size={8}>
-            <ThunderboltOutlined style={{ color: "#7c3aed", fontSize: 22 }} />
-            <Text
-              style={{ color: "#e2e8f0", fontWeight: 700, fontSize: 18, letterSpacing: "-0.5px" }}
-            >
-              Sleepiie Shop
-            </Text>
-          </Space>
-        </Link>
-
-        <Space size={12}>
-          {isLoggedIn ? (
-            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-              <Avatar
-                icon={<UserOutlined />}
-                style={{ background: "#7c3aed", cursor: "pointer" }}
-              />
-            </Dropdown>
-          ) : (
-            <>
-              <Button
-                type="text"
-                onClick={() => router.push("/login")}
-                style={{ color: "#94a3b8" }}
-              >
-                Login
-              </Button>
-              <Button
-                type="primary"
-                icon={<LoginOutlined />}
-                onClick={() => router.push("/register")}
-                style={{ borderRadius: 8 }}
-              >
-                Register
-              </Button>
-            </>
-          )}
-        </Space>
-      </header>
+      <Navbar cartCount={cartCount} onCartCountChange={setCartCount} />
 
       {/* Hero */}
       <section
@@ -273,7 +225,13 @@ export default function LandingPage() {
           <span style={{ color: "#a78bfa" }}>Instantly Delivered</span>
         </Title>
         <Paragraph
-          style={{ color: "#94a3b8", fontSize: 16, marginBottom: 36, maxWidth: 500, margin: "0 auto 36px" }}
+          style={{
+            color: "#94a3b8",
+            fontSize: 16,
+            marginBottom: 36,
+            maxWidth: 500,
+            margin: "0 auto 36px",
+          }}
         >
           Browse thousands of game keys for every platform at the best prices.
         </Paragraph>
@@ -325,7 +283,11 @@ export default function LandingPage() {
             <Row gutter={[20, 20]}>
               {games.map((game) => (
                 <Col key={game.id} xs={24} sm={12} md={8} lg={6}>
-                  <GameCard game={game} />
+                  <GameCard
+                    game={game}
+                    onAddToCart={handleAddToCart}
+                    adding={addingId === game.id}
+                  />
                 </Col>
               ))}
             </Row>

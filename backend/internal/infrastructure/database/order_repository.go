@@ -50,7 +50,8 @@ func (r *orderRepository) CreateOrder(order *domain.Order) error {
 func (r *orderRepository) GetHistory(userID uint) ([]domain.Order, error) {
 	var orders []domain.Order
 	err := r.db.Preload("Items").Preload("Keys").
-		Where("user_id = ? AND status = ?", userID, "paid").
+		Where("user_id = ?", userID).
+		Order("created_at DESC").
 		Find(&orders).Error
 	return orders, err
 }
