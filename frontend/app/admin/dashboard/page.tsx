@@ -243,6 +243,24 @@ export default function AdminDashboard() {
       render: (id: number) => <Text style={{ color: "#94a3b8" }}>#{id}</Text>,
     },
     {
+      title: "Date",
+      dataIndex: "created_at",
+      key: "created_at",
+      render: (date: string) => (
+        <Text style={{ color: "#64748b", fontSize: 10 }}>
+          {new Date(date).toLocaleDateString()}
+        </Text>
+      ),
+    },
+    {
+      title: "Amount",
+      dataIndex: "total_amount",
+      key: "total_amount",
+      render: (amount: number) => (
+        <Text style={{ color: "#e2e8f0", fontWeight: 600 }}>฿{amount.toLocaleString()}</Text>
+      ),
+    },
+    {
       title: "Status",
       dataIndex: "status",
       key: "status",
@@ -411,7 +429,7 @@ export default function AdminDashboard() {
             </Card>
           </Col>
 
-          {/* Quick Actions / Recent Orders */}
+          {/* Recent Orders */}
           <Col xs={24} lg={8}>
             <Card
               title={<Text style={{ color: "#e2e8f0", fontWeight: 600 }}>Recent Orders</Text>}
@@ -419,13 +437,19 @@ export default function AdminDashboard() {
                 background: "#1a1a2e",
                 border: "1px solid rgba(124,58,237,0.15)",
                 borderRadius: 16,
+                height: "100%",
               }}
               styles={{ body: { padding: 0 } }}
             >
               <Table
-                dataSource={orders.slice(0, 5)}
+                dataSource={orders}
                 columns={orderColumns}
-                pagination={false}
+                pagination={{
+                  pageSize: 7,
+                  size: "small",
+                  simple: true,
+                  style: { margin: "12px 8px" }
+                }}
                 size="small"
                 rowKey="id"
                 style={{ background: "transparent" }}

@@ -89,7 +89,7 @@ func (r *orderRepository) ProcessPaymentSuccess(paymentIntentID string) (*domain
 
 func (r *orderRepository) GetAllOrders() ([]domain.Order, error) {
 	var orders []domain.Order
-	err := r.db.Preload("Items").Preload("Keys").Find(&orders).Error
+	err := r.db.Preload("Items").Preload("Keys").Order("created_at DESC").Find(&orders).Error
 	return orders, err
 }
 
