@@ -56,6 +56,8 @@ type OrderRepository interface {
 	ProcessPaymentSuccess(paymentIntentID string) (*Order, error)
 	GetAllOrders() ([]Order, error)
 	GetRevenueSummary() (float64, int64, []DailyRevenue, error)
+	CancelOrder(orderID uint) error
+	ProcessPaymentFailure(paymentIntentID string) error
 }
 
 type OrderService interface {
@@ -64,4 +66,6 @@ type OrderService interface {
 	ProcessPaymentSuccess(paymentIntentID string) error
 	GetAllOrders() ([]OrderHistoryResponse, error)
 	GetRevenueSummary() (*RevenueSummaryResponse, error)
+	CancelOrder(orderID uint) error
+	ProcessPaymentFailure(paymentIntentID string) error
 }

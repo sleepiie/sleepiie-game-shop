@@ -9,6 +9,7 @@ import {
   LoginOutlined,
   HistoryOutlined,
   ThunderboltOutlined,
+  DashboardOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -24,6 +25,7 @@ interface NavbarProps {
 export default function Navbar({ cartCount: externalCartCount, onCartCountChange }: NavbarProps) {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [internalCartCount, setInternalCartCount] = useState(0);
 
   const cartCount = externalCartCount ?? internalCartCount;
@@ -40,21 +42,43 @@ export default function Navbar({ cartCount: externalCartCount, onCartCountChange
   }, [onCartCountChange]);
 
   useEffect(() => {
-    const loggedIn = !!localStorage.getItem("token");
-    setIsLoggedIn(loggedIn);
-    if (loggedIn) {
+    const token = localStorage.getItem("token");
+    if (token) {
+      setIsLoggedIn(true);
       fetchCartCount();
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        setIsAdmin(payload.role === "admin");
+      } catch {
+        setIsAdmin(false);
+      }
+    } else {
+      setIsLoggedIn(false);
+      setIsAdmin(false);
     }
   }, [fetchCartCount]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     setIsLoggedIn(false);
+    setIsAdmin(false);
     setInternalCartCount(0);
     router.push("/");
   };
 
-  const userMenuItems = [
+  const userMenuItems = [];
+
+  if (isAdmin) {
+    userMenuItems.push({
+      key: "dashboard",
+      label: "Admin Dashboard",
+      icon: <DashboardOutlined />,
+      onClick: () => router.push("/admin/dashboard"),
+    });
+    userMenuItems.push({ type: "divider" as const });
+  }
+
+  userMenuItems.push(
     {
       key: "orders",
       label: "Order History",
@@ -68,8 +92,8 @@ export default function Navbar({ cartCount: externalCartCount, onCartCountChange
       icon: <LogoutOutlined />,
       danger: true,
       onClick: handleLogout,
-    },
-  ];
+    }
+  );
 
   return (
     <header

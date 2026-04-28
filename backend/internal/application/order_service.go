@@ -140,3 +140,11 @@ func (s *orderService) GetRevenueSummary() (*domain.RevenueSummaryResponse, erro
 		DailyRevenue: dailyRevenue,
 	}, nil
 }
+
+func (s *orderService) CancelOrder(orderID uint) error {
+	return s.repo.CancelOrder(orderID)
+}
+
+func (s *orderService) ProcessPaymentFailure(paymentIntentID string) error {
+	return s.repo.ProcessPaymentFailure(paymentIntentID)
+}

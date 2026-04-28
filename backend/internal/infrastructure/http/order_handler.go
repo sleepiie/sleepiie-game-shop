@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -81,6 +82,17 @@ func (h *OrderHandler) StripeWebhook(c *gin.Context) {
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
+	} else if event.Type == "payment_intent.canceled" || event.Type == "payment_intent.payment_failed" {
+		var pi stripe.PaymentIntent
+		if err := json.Unmarshal(event.Data.Raw, &pi); err != nil {
+			c.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
+		if err := h.service.ProcessPaymentFailure(pi.ID); err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
 	}
 	c.Status(http.StatusOK)
 }
@@ -103,5 +115,21 @@ func (h *OrderHandler) GetRevenueSummary(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, summary)
+}
+
+func (h *OrderHandler) CancelOrder(c *gin.Context) {
+	idStr := c.Param("id")
+	var id uint
+	if _, err := fmt.Sscanf(idStr, "%d", &id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID"})
+		return
+	}
+
+	if err := h.service.CancelOrder(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to cancel order"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Order cancelled successfully"})
 }
 

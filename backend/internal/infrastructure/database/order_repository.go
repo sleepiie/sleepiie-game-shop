@@ -121,3 +121,11 @@ func (r *orderRepository) GetRevenueSummary() (float64, int64, []domain.DailyRev
 
 	return totalRevenue, totalOrders, dailyRevenue, nil
 }
+
+func (r *orderRepository) CancelOrder(orderID uint) error {
+	return r.db.Model(&domain.Order{}).Where("id = ? AND status = ?", orderID, "pending").Update("status", "failed").Error
+}
+
+func (r *orderRepository) ProcessPaymentFailure(paymentIntentID string) error {
+	return r.db.Model(&domain.Order{}).Where("payment_intent = ? AND status = ?", paymentIntentID, "pending").Update("status", "failed").Error
+}

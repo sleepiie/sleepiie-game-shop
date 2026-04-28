@@ -87,6 +87,7 @@ func main() {
 			admin.POST("/games/:id/keys", gameHandler.AddGameKeys)
 
 			admin.GET("/orders", orderHandler.GetAllOrders)
+			admin.POST("/orders/:id/cancel", orderHandler.CancelOrder)
 			admin.GET("/revenue", orderHandler.GetRevenueSummary)
 		}
 	}
