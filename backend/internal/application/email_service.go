@@ -9,6 +9,7 @@ import (
 
 type EmailService interface {
 	SendPasswordResetEmail(email string, token string) error
+	SendAccountLockedEmail(email string, permanent bool) error
 }
 
 type emailService struct {
@@ -38,7 +39,6 @@ func (s *emailService) SendPasswordResetEmail(email string, token string) error 
 	}
 	resetLink := fmt.Sprintf("%s/reset-password?token=%s", baseUrl, token)
 
-	// Fallback to console log if SMTP is not configured
 	if s.host == "" || s.user == "" {
 		fmt.Println("\n==================================================")
 		fmt.Println("WARNING: SMTP not configured. Printing to console:")
@@ -75,5 +75,59 @@ func (s *emailService) SendPasswordResetEmail(email string, token string) error 
 	}
 
 	log.Printf("Password reset email sent to %s", email)
+	return nil
+}
+
+func (s *emailService) SendAccountLockedEmail(email string, permanent bool) error {
+	lockType := "temporarily"
+	duration := "15 minutes"
+	action := "Please wait or try again later."
+
+	if permanent {
+		lockType = "permanently"
+		duration = "security reasons"
+		action = "To unlock your account, please use the 'Forgot Password' feature to reset your password."
+	}
+
+	if s.host == "" || s.user == "" {
+		fmt.Println("\n==================================================")
+		fmt.Println("SECURITY ALERT: Account Locked")
+		fmt.Printf("TO: %s\n", email)
+		fmt.Printf("TYPE: %s\n", lockType)
+		fmt.Printf("REASON: Multiple failed login attempts\n")
+		fmt.Printf("ACTION: %s\n", action)
+		fmt.Println("==================================================")
+		return nil
+	}
+
+	subject := "Subject: Security Alert: Your Account Has Been Locked\n"
+	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+	body := fmt.Sprintf(`
+		<html>
+		<body style="font-family: Arial, sans-serif; background-color: #0f0f1a; color: #e2e8f0; padding: 40px;">
+			<div style="max-width: 500px; margin: 0 auto; background-color: #1a1a2e; border: 1px solid #ef4444; border-radius: 20px; padding: 32px; text-align: center;">
+				<h2 style="color: #ef4444;">Security Alert</h2>
+				<p style="font-size: 16px;">Your account at <strong>Sleepiie Shop</strong> has been %s locked due to multiple failed login attempts.</p>
+				<p style="background-color: rgba(239, 68, 68, 0.1); padding: 16px; border-radius: 10px; color: #fca5a5;">
+					Locked for: %s
+				</p>
+				<p style="font-size: 14px; color: #94a3b8; margin-top: 24px;">%s</p>
+				<p style="font-size: 12px; color: #64748b; margin-top: 32px;">If this was not you, please ensure your account is secure.</p>
+			</div>
+		</body>
+		</html>
+	`, lockType, duration, action)
+
+	msg := []byte(subject + mime + body)
+	addr := fmt.Sprintf("%s:%s", s.host, s.port)
+	auth := smtp.PlainAuth("", s.user, s.pass, s.host)
+
+	err := smtp.SendMail(addr, auth, s.from, []string{email}, msg)
+	if err != nil {
+		log.Printf("Failed to send lock email to %s: %v", email, err)
+		return err
+	}
+
+	log.Printf("Account lock email sent to %s", email)
 	return nil
 }

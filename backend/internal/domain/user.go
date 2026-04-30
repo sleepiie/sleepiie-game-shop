@@ -1,14 +1,21 @@
 package domain
 
-import "time"
+import (
+	"errors"
+	"time"
+)
+
+var ErrAccountLocked = errors.New("account is locked")
 
 type User struct {
 	ID           uint      `json:"id" gorm:"primaryKey"`
 	Email        string    `json:"email" gorm:"unique;not null"`
 	PasswordHash string    `json:"-" gorm:"not null"`
 	AvatarURL    string    `json:"avatar_url" gorm:"type:text"`
-	Role         string    `json:"role" gorm:"default:'user'"`
-	CreatedAt    time.Time `json:"created_at"`
+	Role          string     `json:"role" gorm:"default:'user'"`
+	LoginAttempts int        `json:"-" gorm:"default:0"`
+	LockedUntil   *time.Time `json:"-"`
+	CreatedAt     time.Time  `json:"created_at"`
 }
 
 type RegisterRequest struct {

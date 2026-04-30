@@ -2,6 +2,7 @@ package application
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"os"
 	"strings"
@@ -47,13 +48,45 @@ func (s *authService) Register(req domain.RegisterRequest) error {
 
 func (s *authService) Login(req domain.LoginRequest) (string, error) {
 	user, err := s.repo.FindByEmail(req.Email)
-	if err != nil {
+	if err != nil || user == nil {
 		return "", errors.New("invalid email or password")
+	}
+
+	if user.LockedUntil != nil && time.Now().Before(*user.LockedUntil) {
+		if user.LoginAttempts >= 10 {
+			return "", errors.New("account is permanently locked for security. please reset your password to unlock.")
+		}
+		timeLeft := time.Until(*user.LockedUntil).Round(time.Second)
+		return "", fmt.Errorf("%w: please try again in %v", domain.ErrAccountLocked, timeLeft)
 	}
 
 	match, err := argon2id.ComparePasswordAndHash(req.Password, user.PasswordHash)
 	if err != nil || !match {
+		user.LoginAttempts++
+		if user.LoginAttempts >= 10 {
+			unlockTime := time.Now().AddDate(100, 0, 0)
+			user.LockedUntil = &unlockTime
+			s.emailService.SendAccountLockedEmail(user.Email, true)
+		} else if user.LoginAttempts == 5 {
+			unlockTime := time.Now().Add(time.Minute * 15)
+			user.LockedUntil = &unlockTime
+			s.emailService.SendAccountLockedEmail(user.Email, false)
+		}
+		s.repo.Update(user)
+
+		if user.LoginAttempts >= 10 {
+			return "", fmt.Errorf("%w: account is permanently locked for security. please reset your password to unlock.", domain.ErrAccountLocked)
+		}
+		if user.LoginAttempts >= 5 {
+			return "", fmt.Errorf("%w: too many failed attempts. account has been locked for 15 minutes", domain.ErrAccountLocked)
+		}
 		return "", errors.New("invalid email or password")
+	}
+
+	if user.LoginAttempts > 0 || user.LockedUntil != nil {
+		user.LoginAttempts = 0
+		user.LockedUntil = nil
+		s.repo.Update(user)
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -116,6 +149,8 @@ func (s *authService) ResetPassword(req domain.ResetPasswordRequest) error {
 	}
 
 	user.PasswordHash = hashedPassword
+	user.LoginAttempts = 0
+	user.LockedUntil = nil
 	return s.repo.Update(user)
 }
 

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -41,7 +42,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	token, err := h.service.Login(req)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		if errors.Is(err, domain.ErrAccountLocked) {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		}
 		return
 	}
 
