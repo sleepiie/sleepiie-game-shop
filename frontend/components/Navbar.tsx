@@ -29,7 +29,24 @@ function getStoredToken() {
     return null;
   }
 
-  return localStorage.getItem("token");
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    if (payload.exp) {
+      const now = Math.floor(Date.now() / 1000);
+      if (now > payload.exp) {
+        localStorage.removeItem("token");
+        return null;
+      }
+    }
+  } catch {
+    localStorage.removeItem("token");
+    return null;
+  }
+
+  return token;
 }
 
 function getInitialAdminState() {
