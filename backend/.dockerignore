@@ -1,0 +1,9 @@
+.git
+.gitignore
+bin
+main
+.env
+Dockerfile
+docker-compose.yaml
+*.test
+.gocache

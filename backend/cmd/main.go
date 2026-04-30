@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/sleepiie/sleepiie-game-shop/internal/application"
 	"github.com/sleepiie/sleepiie-game-shop/internal/domain"
@@ -18,8 +19,8 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found")
+	if err := godotenv.Load(".env", "../.env"); err != nil {
+		log.Println("No .env file found, using system environment variables")
 	}
 
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
@@ -55,8 +56,14 @@ func main() {
 
 	r := gin.Default()
 
+	origins := os.Getenv("CORS_ALLOW_ORIGINS")
+	allowOrigins := []string{"http://localhost:3000"} // Default
+	if origins != "" {
+		allowOrigins = strings.Split(origins, ",")
+	}
+
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     allowOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: true,

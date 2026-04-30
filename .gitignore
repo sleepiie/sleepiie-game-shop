@@ -38,6 +38,7 @@ yarn-error.log*
 *.so
 *.dylib
 bin/
+.gocache
 
 # Test binary, built with `go test -c`
 *.test
@@ -54,3 +55,4 @@ bin/
 # MacOS
 .AppleDouble
 .LSOverride
+
