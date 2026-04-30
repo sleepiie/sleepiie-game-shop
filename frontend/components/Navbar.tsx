@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { Typography, Space, Badge, Button, Avatar, Dropdown } from "antd";
+import type { MenuProps } from "antd";
 import {
   ShoppingCartOutlined,
   UserOutlined,
@@ -14,6 +15,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import { User } from "@/types";
 
 const { Text } = Typography;
 
@@ -22,11 +24,34 @@ interface NavbarProps {
   onCartCountChange?: (count: number) => void;
 }
 
+function getStoredToken() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return localStorage.getItem("token");
+}
+
+function getInitialAdminState() {
+  const token = getStoredToken();
+  if (!token) {
+    return false;
+  }
+
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload.role === "admin";
+  } catch {
+    return false;
+  }
+}
+
 export default function Navbar({ cartCount: externalCartCount, onCartCountChange }: NavbarProps) {
   const router = useRouter();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => Boolean(getStoredToken()));
+  const [isAdmin, setIsAdmin] = useState(getInitialAdminState);
   const [internalCartCount, setInternalCartCount] = useState(0);
+  const [profile, setProfile] = useState<User | null>(null);
 
   const cartCount = externalCartCount ?? internalCartCount;
 
@@ -41,32 +66,51 @@ export default function Navbar({ cartCount: externalCartCount, onCartCountChange
     }
   }, [onCartCountChange]);
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      setIsLoggedIn(true);
-      fetchCartCount();
-      try {
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        setIsAdmin(payload.role === "admin");
-      } catch {
+  const fetchProfile = useCallback(async () => {
+    try {
+      const res = await api.get<User>("/profile");
+      setProfile(res.data);
+    } catch (err: unknown) {
+      const error = err as { response?: { status?: number } };
+      if (error.response?.status === 401) {
+        localStorage.removeItem("token");
+        setIsLoggedIn(false);
         setIsAdmin(false);
       }
-    } else {
-      setIsLoggedIn(false);
-      setIsAdmin(false);
+      setProfile(null);
     }
-  }, [fetchCartCount]);
+  }, []);
+
+  useEffect(() => {
+    if (!getStoredToken()) {
+      return;
+    }
+
+    void Promise.resolve().then(fetchCartCount);
+    void Promise.resolve().then(fetchProfile);
+  }, [fetchCartCount, fetchProfile]);
+
+  useEffect(() => {
+    const handleProfileUpdated = () => {
+      if (getStoredToken()) {
+        void Promise.resolve().then(fetchProfile);
+      }
+    };
+
+    window.addEventListener("profile-updated", handleProfileUpdated);
+    return () => window.removeEventListener("profile-updated", handleProfileUpdated);
+  }, [fetchProfile]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     setIsLoggedIn(false);
     setIsAdmin(false);
     setInternalCartCount(0);
+    setProfile(null);
     router.push("/");
   };
 
-  const userMenuItems = [];
+  const userMenuItems: MenuProps["items"] = [];
 
   if (isAdmin) {
     userMenuItems.push({
@@ -79,6 +123,13 @@ export default function Navbar({ cartCount: externalCartCount, onCartCountChange
   }
 
   userMenuItems.push(
+    {
+      key: "profile",
+      label: "Profile Settings",
+      icon: <UserOutlined />,
+      onClick: () => router.push("/profile"),
+    },
+    { type: "divider" },
     {
       key: "orders",
       label: "Order History",
@@ -149,6 +200,7 @@ export default function Navbar({ cartCount: externalCartCount, onCartCountChange
             </Link>
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
               <Avatar
+                src={profile?.avatar_url || undefined}
                 icon={<UserOutlined />}
                 style={{ background: "#7c3aed", cursor: "pointer" }}
               />

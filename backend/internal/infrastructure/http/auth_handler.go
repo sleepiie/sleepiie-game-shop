@@ -80,3 +80,57 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Password reset successfully"})
 }
+
+func (h *AuthHandler) GetProfile(c *gin.Context) {
+	userID, ok := getUserIDFromContext(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	profile, err := h.service.GetProfile(userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, profile)
+}
+
+func (h *AuthHandler) UpdateProfile(c *gin.Context) {
+	userID, ok := getUserIDFromContext(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var req domain.UpdateProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input format"})
+		return
+	}
+
+	profile, err := h.service.UpdateProfile(userID, req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, profile)
+}
+
+func getUserIDFromContext(c *gin.Context) (uint, bool) {
+	userIDValue, exists := c.Get("user_id")
+	if !exists {
+		return 0, false
+	}
+
+	switch value := userIDValue.(type) {
+	case float64:
+		return uint(value), true
+	case uint:
+		return value, true
+	default:
+		return 0, false
+	}
+}

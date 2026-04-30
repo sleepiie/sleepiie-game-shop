@@ -74,6 +74,8 @@ func main() {
 		protected := api.Group("/")
 		protected.Use(handler.AuthMiddleware())
 		{
+			protected.GET("/profile", authHandler.GetProfile)
+			protected.PUT("/profile", authHandler.UpdateProfile)
 			protected.GET("/cart", cartHandler.GetCart)
 			protected.POST("/cart", cartHandler.AddToCart)
 			protected.DELETE("/cart/:id", cartHandler.RemoveFromCart)

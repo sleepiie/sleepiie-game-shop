@@ -16,7 +16,15 @@ export interface AuthResponse {
 export interface User {
   id: number;
   email: string;
+  avatar_url: string;
   role: string;
+  created_at: string;
+}
+
+export interface UpdateProfilePayload {
+  avatar_url?: string;
+  current_password?: string;
+  new_password?: string;
 }
 
 // Cart types
