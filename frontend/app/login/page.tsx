@@ -127,6 +127,7 @@ export default function LoginPage() {
             <Form.Item
               name="password"
               rules={[{ required: true, message: "Please enter your password" }]}
+              style={{ marginBottom: 8 }}
             >
               <Input.Password
                 prefix={<LockOutlined style={{ color: "#7c3aed" }} />}
@@ -134,6 +135,22 @@ export default function LoginPage() {
                 style={{ borderRadius: 10 }}
               />
             </Form.Item>
+
+            <div style={{ textAlign: "right", marginBottom: 24 }}>
+              <Link href="/forgot-password">
+                <Text
+                  style={{
+                    color: "#a78bfa",
+                    fontSize: 13,
+                    cursor: "pointer",
+                    transition: "color 0.3s",
+                  }}
+                  className="hover-bright"
+                >
+                  Forgot Password?
+                </Text>
+              </Link>
+            </div>
 
             <Form.Item style={{ marginBottom: 0 }}>
               <Button

@@ -20,12 +20,25 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+type ForgotPasswordRequest struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
+type ResetPasswordRequest struct {
+	Token    string `json:"token" binding:"required"`
+	Password string `json:"password" binding:"required,min=6"`
+}
+
 type UserRepository interface {
 	Create(user *User) error
 	FindByEmail(email string) (*User, error)
+	FindByID(id uint) (*User, error)
+	Update(user *User) error
 }
 
 type AuthService interface {
 	Register(req RegisterRequest) error
 	Login(req LoginRequest) (string, error) // คืนค่าเป็น JWT Token
+	ForgotPassword(req ForgotPasswordRequest) error
+	ResetPassword(req ResetPasswordRequest) error
 }

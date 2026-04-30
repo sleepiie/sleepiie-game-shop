@@ -12,11 +12,15 @@ import (
 )
 
 type authService struct {
-	repo domain.UserRepository
+	repo         domain.UserRepository
+	emailService EmailService
 }
 
-func NewAuthService(repo domain.UserRepository) domain.AuthService {
-	return &authService{repo: repo}
+func NewAuthService(repo domain.UserRepository, emailService EmailService) domain.AuthService {
+	return &authService{
+		repo:         repo,
+		emailService: emailService,
+	}
 }
 
 func (s *authService) Register(req domain.RegisterRequest) error {
@@ -60,4 +64,57 @@ func (s *authService) Login(req domain.LoginRequest) (string, error) {
 	tokenString, err := token.SignedString([]byte(secret))
 
 	return tokenString, err
+}
+
+func (s *authService) ForgotPassword(req domain.ForgotPasswordRequest) error {
+	user, err := s.repo.FindByEmail(req.Email)
+	if err != nil || user == nil {
+		// Security best practice: don't reveal if email exists
+		return nil 
+	}
+
+	// Create a short-lived token for password reset (15 mins)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": user.ID,
+		"type":    "password_reset",
+		"exp":     time.Now().Add(time.Minute * 15).Unix(),
+	})
+
+	secret := os.Getenv("JWT_SECRET")
+	tokenString, err := token.SignedString([]byte(secret))
+	if err != nil {
+		return errors.New("failed to generate reset token")
+	}
+
+	return s.emailService.SendPasswordResetEmail(user.Email, tokenString)
+}
+
+func (s *authService) ResetPassword(req domain.ResetPasswordRequest) error {
+	secret := os.Getenv("JWT_SECRET")
+	token, err := jwt.Parse(req.Token, func(token *jwt.Token) (interface{}, error) {
+		return []byte(secret), nil
+	})
+
+	if err != nil || !token.Valid {
+		return errors.New("invalid or expired reset token")
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || claims["type"] != "password_reset" {
+		return errors.New("invalid token type")
+	}
+
+	userID := uint(claims["user_id"].(float64))
+	user, err := s.repo.FindByID(userID)
+	if err != nil || user == nil {
+		return errors.New("user not found")
+	}
+
+	hashedPassword, err := argon2id.CreateHash(req.Password, argon2id.DefaultParams)
+	if err != nil {
+		return errors.New("failed to hash password")
+	}
+
+	user.PasswordHash = hashedPassword
+	return s.repo.Update(user)
 }

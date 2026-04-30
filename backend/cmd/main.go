@@ -41,7 +41,8 @@ func main() {
 	gameHandler := handler.NewGameHandler(gameService)
 
 	userRepo := database.NewUserRepository(db)
-	authService := application.NewAuthService(userRepo)
+	emailService := application.NewEmailService()
+	authService := application.NewAuthService(userRepo, emailService)
 	authHandler := handler.NewAuthHandler(authService)
 
 	cartRepo := database.NewCartRepository(db)
@@ -66,6 +67,8 @@ func main() {
 		api.GET("/games", gameHandler.GetGames)
 		api.POST("/register", authHandler.Register)
 		api.POST("/login", authHandler.Login)
+		api.POST("/forgot-password", authHandler.ForgotPassword)
+		api.POST("/reset-password", authHandler.ResetPassword)
 		api.POST("/webhook", orderHandler.StripeWebhook)
 
 		protected := api.Group("/")
