@@ -1,6 +1,6 @@
 # Sleepiie Game Shop
 
-A full-stack e-commerce platform for purchasing digital game keys. Built with modern web technologies focusing on performance, security, and a seamless user experience.
+This project is a full-stack e-commerce platform for purchasing digital game keys.
 
 ## System Architecture
 
