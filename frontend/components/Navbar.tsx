@@ -65,8 +65,9 @@ function getInitialAdminState() {
 
 export default function Navbar({ cartCount: externalCartCount, onCartCountChange }: NavbarProps) {
   const router = useRouter();
-  const [isLoggedIn, setIsLoggedIn] = useState(() => Boolean(getStoredToken()));
-  const [isAdmin, setIsAdmin] = useState(getInitialAdminState);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [internalCartCount, setInternalCartCount] = useState(0);
   const [profile, setProfile] = useState<User | null>(null);
 
@@ -99,6 +100,10 @@ export default function Navbar({ cartCount: externalCartCount, onCartCountChange
   }, []);
 
   useEffect(() => {
+    setMounted(true);
+    setIsLoggedIn(Boolean(getStoredToken()));
+    setIsAdmin(getInitialAdminState());
+
     if (!getStoredToken()) {
       return;
     }
@@ -197,7 +202,7 @@ export default function Navbar({ cartCount: externalCartCount, onCartCountChange
       </Link>
 
       <Space size={12}>
-        {isLoggedIn ? (
+        {!mounted ? null : isLoggedIn ? (
           <>
             <Link href="/cart">
               <Badge count={cartCount} size="small" offset={[-2, 2]} color="#7c3aed">

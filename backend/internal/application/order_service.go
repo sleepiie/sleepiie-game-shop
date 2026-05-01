@@ -1,24 +1,18 @@
 package application
 
-import (
-	"os"
-
-	"github.com/sleepiie/sleepiie-game-shop/internal/domain"
-
-	"github.com/stripe/stripe-go/v78"
-	"github.com/stripe/stripe-go/v78/paymentintent"
-)
+import "github.com/sleepiie/sleepiie-game-shop/internal/domain"
 
 type orderService struct {
 	repo        domain.OrderRepository
 	cartService domain.CartService
+	paymentGate domain.PaymentGateway
 }
 
-func NewOrderService(repo domain.OrderRepository, cartService domain.CartService) domain.OrderService {
-	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
+func NewOrderService(repo domain.OrderRepository, cartService domain.CartService, paymentGate domain.PaymentGateway) domain.OrderService {
 	return &orderService{
 		repo:        repo,
 		cartService: cartService,
+		paymentGate: paymentGate,
 	}
 }
 
@@ -28,12 +22,7 @@ func (s *orderService) Checkout(userID uint, req domain.CheckoutRequest) (string
 		return "", err
 	}
 
-	params := &stripe.PaymentIntentParams{
-		Amount:             stripe.Int64(int64(totalAmount * 100)),
-		Currency:           stripe.String(string(stripe.CurrencyTHB)),
-		PaymentMethodTypes: stripe.StringSlice([]string{"promptpay"}),
-	}
-	pi, err := paymentintent.New(params)
+	pi, err := s.paymentGate.CreatePromptPayPayment(totalAmount)
 	if err != nil {
 		return "", err
 	}

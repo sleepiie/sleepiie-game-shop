@@ -49,6 +49,15 @@ type RevenueSummaryResponse struct {
 	DailyRevenue []DailyRevenue `json:"daily_revenue"`
 }
 
+type PaymentIntent struct {
+	ID           string
+	ClientSecret string
+}
+
+type PaymentGateway interface {
+	CreatePromptPayPayment(amount float64) (*PaymentIntent, error)
+}
+
 type OrderRepository interface {
 	CheckStockAndCalculateTotal(gameIDs []uint) (float64, []OrderItem, error)
 	CreateOrder(order *Order) error

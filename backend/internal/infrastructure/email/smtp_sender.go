@@ -1,43 +1,40 @@
-package application
+package email
 
 import (
 	"fmt"
 	"log"
 	"net/smtp"
 	"os"
+
+	"github.com/sleepiie/sleepiie-game-shop/internal/domain"
 )
 
-type EmailService interface {
-	SendPasswordResetEmail(email string, token string) error
-	SendAccountLockedEmail(email string, permanent bool) error
-}
-
-type emailService struct {
+type smtpSender struct {
 	host    string
 	port    string
 	user    string
 	pass    string
 	from    string
-	baseUrl string
+	baseURL string
 }
 
-func NewEmailService() EmailService {
-	return &emailService{
+func NewSMTPSender() domain.EmailSender {
+	return &smtpSender{
 		host:    os.Getenv("SMTP_HOST"),
 		port:    os.Getenv("SMTP_PORT"),
 		user:    os.Getenv("SMTP_USER"),
 		pass:    os.Getenv("SMTP_PASS"),
 		from:    os.Getenv("FROM_EMAIL"),
-		baseUrl: os.Getenv("FRONTEND_URL"),
+		baseURL: os.Getenv("FRONTEND_URL"),
 	}
 }
 
-func (s *emailService) SendPasswordResetEmail(email string, token string) error {
-	baseUrl := s.baseUrl
-	if baseUrl == "" {
-		baseUrl = "http://localhost:3000"
+func (s *smtpSender) SendPasswordResetEmail(email string, token string) error {
+	baseURL := s.baseURL
+	if baseURL == "" {
+		baseURL = "http://localhost:3000"
 	}
-	resetLink := fmt.Sprintf("%s/reset-password?token=%s", baseUrl, token)
+	resetLink := fmt.Sprintf("%s/reset-password?token=%s", baseURL, token)
 
 	if s.host == "" || s.user == "" {
 		fmt.Println("\n==================================================")
@@ -78,7 +75,7 @@ func (s *emailService) SendPasswordResetEmail(email string, token string) error 
 	return nil
 }
 
-func (s *emailService) SendAccountLockedEmail(email string, permanent bool) error {
+func (s *smtpSender) SendAccountLockedEmail(email string, permanent bool) error {
 	lockType := "temporarily"
 	duration := "15 minutes"
 	action := "Please wait or try again later."

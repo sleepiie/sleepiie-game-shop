@@ -9,7 +9,9 @@ import (
 	"github.com/sleepiie/sleepiie-game-shop/internal/application"
 	"github.com/sleepiie/sleepiie-game-shop/internal/domain"
 	"github.com/sleepiie/sleepiie-game-shop/internal/infrastructure/database"
+	"github.com/sleepiie/sleepiie-game-shop/internal/infrastructure/email"
 	handler "github.com/sleepiie/sleepiie-game-shop/internal/infrastructure/http"
+	"github.com/sleepiie/sleepiie-game-shop/internal/infrastructure/payment"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -19,8 +21,11 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load(".env", "../.env"); err != nil {
-		log.Println("No .env file found, using system environment variables")
+	// Try loading from current dir, if fails try parent dir
+	if err := godotenv.Load(".env"); err != nil {
+		if err := godotenv.Load("../.env"); err != nil {
+			log.Println("No .env file found, using system environment variables")
+		}
 	}
 
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
@@ -42,8 +47,8 @@ func main() {
 	gameHandler := handler.NewGameHandler(gameService)
 
 	userRepo := database.NewUserRepository(db)
-	emailService := application.NewEmailService()
-	authService := application.NewAuthService(userRepo, emailService)
+	emailSender := email.NewSMTPSender()
+	authService := application.NewAuthService(userRepo, emailSender)
 	authHandler := handler.NewAuthHandler(authService)
 
 	cartRepo := database.NewCartRepository(db)
@@ -51,7 +56,8 @@ func main() {
 	cartHandler := handler.NewCartHandler(cartService)
 
 	orderRepo := database.NewOrderRepository(db)
-	orderService := application.NewOrderService(orderRepo, cartService)
+	paymentGateway := payment.NewStripeGateway()
+	orderService := application.NewOrderService(orderRepo, cartService, paymentGateway)
 	orderHandler := handler.NewOrderHandler(orderService)
 
 	r := gin.Default()

@@ -15,14 +15,14 @@ import (
 )
 
 type authService struct {
-	repo         domain.UserRepository
-	emailService EmailService
+	repo        domain.UserRepository
+	emailSender domain.EmailSender
 }
 
-func NewAuthService(repo domain.UserRepository, emailService EmailService) domain.AuthService {
+func NewAuthService(repo domain.UserRepository, emailSender domain.EmailSender) domain.AuthService {
 	return &authService{
-		repo:         repo,
-		emailService: emailService,
+		repo:        repo,
+		emailSender: emailSender,
 	}
 }
 
@@ -66,11 +66,11 @@ func (s *authService) Login(req domain.LoginRequest) (string, error) {
 		if user.LoginAttempts >= 10 {
 			unlockTime := time.Now().AddDate(100, 0, 0)
 			user.LockedUntil = &unlockTime
-			s.emailService.SendAccountLockedEmail(user.Email, true)
+			s.emailSender.SendAccountLockedEmail(user.Email, true)
 		} else if user.LoginAttempts == 5 {
 			unlockTime := time.Now().Add(time.Minute * 15)
 			user.LockedUntil = &unlockTime
-			s.emailService.SendAccountLockedEmail(user.Email, false)
+			s.emailSender.SendAccountLockedEmail(user.Email, false)
 		}
 		s.repo.Update(user)
 
@@ -119,7 +119,7 @@ func (s *authService) ForgotPassword(req domain.ForgotPasswordRequest) error {
 		return errors.New("failed to generate reset token")
 	}
 
-	return s.emailService.SendPasswordResetEmail(user.Email, tokenString)
+	return s.emailSender.SendPasswordResetEmail(user.Email, tokenString)
 }
 
 func (s *authService) ResetPassword(req domain.ResetPasswordRequest) error {
